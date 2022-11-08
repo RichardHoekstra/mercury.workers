@@ -115,7 +115,7 @@ const REFRESH_THRESHOLD_IN_MS = 8 * 60 * 60 * 1000; // Every 12 hours
 if (!process.env.TWITTER_API_BEARER)
     throw new Error(`wtfff${process.env.TWITTER_API_BEARER}`);
 
-const twitterClient = new TwitterApi(process.env.TWITTER_API_BEARER || "");
+const twitterClient = new TwitterApi(process.env.TWITTER_API_BEARER);
 const twtr = twitterClient.readOnly;
 
 let SLEEP_UNTIL_TIMESTAMP_IN_MS = 0;
@@ -239,6 +239,7 @@ const loop = async () => {
 };
 
 export const scraper = async () => {
+    await sleep(1000);
     let EXECUTION_TIME_MS = 0;
     while (true) {
         if (Date.now() > SLEEP_UNTIL_TIMESTAMP_IN_MS) {
