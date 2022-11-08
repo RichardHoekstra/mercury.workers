@@ -231,7 +231,24 @@ const loop = async () => {
 
 export const scraper = async () => {
     let EXECUTION_TIME_MS = 0;
+    let REFRESH_VIEWS_AT = 0;
+    const REFRESH_VIEWS_INTERVAL_IN_MS = 8 * 60 * 60 * 1000; // 8 hours
     while (true) {
+        if (Date.now() > REFRESH_VIEWS_AT) {
+            console.log(`${new Date().toISOString()}\tREFRESHING VIEWS`);
+
+            await prisma.$executeRaw`REFRESH MATERIALIZED VIEW public.popular_user WITH DATA;`;
+            await prisma.$executeRaw`REFRESH MATERIALIZED VIEW public.trending_user_1d WITH DATA;`;
+            await prisma.$executeRaw`REFRESH MATERIALIZED VIEW public.trending_user_3d WITH DATA;`;
+            await prisma.$executeRaw`REFRESH MATERIALIZED VIEW public.trending_user_7d WITH DATA;`;
+            await prisma.$executeRaw`REFRESH MATERIALIZED VIEW public.trending_user_30d WITH DATA;`;
+            await prisma.$executeRaw`REFRESH MATERIALIZED VIEW public.trending_user_90d WITH DATA;`;
+            await prisma.$executeRaw`REFRESH MATERIALIZED VIEW public.trending_user_180d WITH DATA;`;
+            await prisma.$executeRaw`REFRESH MATERIALIZED VIEW public.trending_user_365d WITH DATA;`;
+            console.log(`${new Date().toISOString()}\tDONE REFRESHING VIEWS`);
+            REFRESH_VIEWS_AT = Date.now() + REFRESH_VIEWS_INTERVAL_IN_MS;
+        }
+
         if (Date.now() > SLEEP_UNTIL_TIMESTAMP_IN_MS) {
             try {
                 const start = Date.now();
