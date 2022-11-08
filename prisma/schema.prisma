@@ -1,0 +1,198 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  accounts      Account[]
+  sessions      Session[]
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model TUser {
+  id                        String        @id
+  name                      String
+  username                  String
+  following                 TConnection[] @relation("following")
+  followers                 TConnection[] @relation("followers")
+  accountCreatedAt          DateTime? // To be removed
+  accountExists             Boolean       @default(true)
+  marked                    Boolean       @default(false)
+  markedWeight              Int           @default(1)
+  scrapedAt                 DateTime      @default(now())
+  partialFollowingScrapedAt DateTime      @default(now())
+  fullFollowingScrapedAt    DateTime      @default(now())
+  diffFollowingCount        Int           @default(0)
+  lastFollowingCount        Int           @default(0)
+  profileScrapedAt          DateTime      @default(now())
+  likesScrapedAt            DateTime      @default(now())
+  createdAt                 DateTime      @default(now())
+
+  twitterMetaData      TUserMetadata?
+  twitterPublicMetrics TUserPublicMetrics?
+  likes                TLike[]
+
+  @@index([username])
+  @@index([marked], type: Hash)
+  @@index([scrapedAt])
+}
+
+model TUserMetadata {
+  tUser   TUser  @relation(fields: [tUserId], references: [id])
+  tUserId String @unique
+
+  createdAt         DateTime?
+  description       String?
+  entities          Json?
+  location          String?
+  pinned_tweet_id   String?
+  profile_image_url String?
+  protected         Boolean?
+  url               String?
+  verified          Boolean?
+
+  recordCreatedAt DateTime @default(now())
+  recordUpdatedAt DateTime @updatedAt
+}
+
+model TUserPublicMetrics {
+  tUser   TUser  @relation(fields: [tUserId], references: [id])
+  tUserId String @unique
+
+  followers_count Int?
+  following_count Int?
+  tweet_count     Int?
+  listed_count    Int?
+
+  recordCreatedAt DateTime @default(now())
+  recordUpdatedAt DateTime @updatedAt
+}
+
+enum ConnectionStatus {
+  CONNECTED
+  DISCONNECTED
+}
+
+model TConnection {
+  from      TUser            @relation("following", fields: [fromId], references: [id], onDelete: Cascade)
+  fromId    String
+  to        TUser            @relation("followers", fields: [toId], references: [id], onDelete: Cascade)
+  toId      String
+  version   Int
+  status    ConnectionStatus
+  createdAt DateTime         @default(now())
+
+  @@id([fromId, toId, version])
+  @@index([fromId])
+  @@index([toId])
+  @@index([status], type: Hash)
+  @@index([fromId, toId, version(sort: Desc)])
+  @@index([createdAt])
+}
+
+model TTweet {
+  id             String   @id
+  tweetText      String
+  createdAt      DateTime
+  authorId       String
+  conversationId String
+
+  referencedTweets    Json?
+  attachments         Json?
+  geo                 Json?
+  context_annotations Json?
+  entities            Json?
+  withheld            Json?
+  possibly_sensitive  Boolean
+  lang                String
+  reply_settings      String
+  source              String
+
+  likes                TLike[]
+  twitterPublicMetrics TTweetPublicMetrics?
+
+  recordCreatedAt DateTime @default(now())
+  recordUpdatedAt DateTime @updatedAt
+}
+
+model TTweetPublicMetrics {
+  tTweet   TTweet @relation(fields: [tTweetId], references: [id])
+  tTweetId String @unique
+
+  retweet_count Int?
+  reply_count   Int?
+  like_count    Int?
+  quote_count   Int?
+
+  recordCreatedAt DateTime @default(now())
+  recordUpdatedAt DateTime @updatedAt
+}
+
+model TLike {
+  tTweet   TTweet @relation(fields: [tTweetId], references: [id])
+  tTweetId String
+  tUser    TUser  @relation(fields: [tUserId], references: [id])
+  tUserId  String
+
+  recordCreatedAt DateTime @default(now())
+  recordUpdatedAt DateTime @updatedAt
+
+  @@unique([tTweetId, tUserId])
+}
+
+model ScraperData {
+  id                  String   @id
+  ratelimit_limit     Int
+  ratelimit_remaining Int
+  ratelimit_reset     Int
+  data                Json?
+  error               String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
