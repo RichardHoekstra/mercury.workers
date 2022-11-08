@@ -144,7 +144,7 @@ const loop = async () => {
         SLEEP_TIME_MS *= SLEEP_MULTIPLIER_ON_ERROR;
         console.log(
             `${new Date().toISOString()}\tSLEEP UNTIL ${new Date(
-                SLEEP_UNTIL_TIMESTAMP_IN_MS / 1000.0
+                SLEEP_UNTIL_TIMESTAMP_IN_MS
             ).toISOString()}`
         );
         return;
