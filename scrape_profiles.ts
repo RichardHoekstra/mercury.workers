@@ -61,6 +61,7 @@ async function upsertTweet(newTweet: TweetV2) {
 
     const tweetUpsert = {
         ...tweetCreate,
+        id: undefined,
         twitterPublicMetrics: {
             upsert: {
                 create: twitterPublicMetrics,
