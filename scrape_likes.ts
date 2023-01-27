@@ -52,7 +52,7 @@ async function upsertTweet(newTweet: TweetV2) {
         possibly_sensitive: newTweet.possibly_sensitive!,
         lang: newTweet.lang!,
         reply_settings: newTweet.reply_settings!,
-        source: newTweet.source!,
+        source: newTweet.source ?? "",
 
         twitterPublicMetrics: {
             create: twitterPublicMetrics,
