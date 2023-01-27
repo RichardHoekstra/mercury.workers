@@ -282,4 +282,7 @@ export const scraper = async () => {
 
 scraper()
     .then()
-    .catch((e) => console.log(e));
+    .catch((e) => {
+        console.log(e);
+        throw e;
+    });
