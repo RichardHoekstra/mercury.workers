@@ -6,7 +6,7 @@ import {
     UserV2,
     ApiRequestError,
 } from "twitter-api-v2";
-import { PrismaClient } from "@prisma/client";
+import { Prisma, PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 function log(message: string) {
@@ -275,6 +275,15 @@ export const scraperFollowing = async () => {
                 ) {
                     log(`${new Date().toISOString()}\tAPI Error: ${error}\t`);
                     SLEEP_UNTIL_TIMESTAMP_IN_MS = Date.now() + 60 * 1000.0; // Wait one minute before retrying...
+                } else if (
+                    error instanceof Prisma.PrismaClientKnownRequestError &&
+                    error.code === "P2002"
+                ) {
+                    // This is likely a race condition
+                    log(
+                        `${new Date().toISOString()}\tUnique constraint error: ${error}\t`
+                    );
+                    SLEEP_UNTIL_TIMESTAMP_IN_MS = Date.now() + 60 * 1000.0; // Wait one minute before retrying...
                 } else {
                     throw error;
                 }
@@ -289,9 +298,9 @@ export const scraperFollowing = async () => {
     }
 };
 
-scraperFollowing()
-    .then()
-    .catch((e) => {
-        log(e);
-        throw e;
-    });
+// scraperFollowing()
+//     .then()
+//     .catch((e) => {
+//         log(e);
+//         throw e;
+//     });
