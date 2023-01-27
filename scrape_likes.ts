@@ -231,6 +231,15 @@ export const scraperLikes = async () => {
                     SLEEP_UNTIL_TIMESTAMP_IN_MS =
                         error.rateLimit.reset * 1000.0;
                     SLEEP_TIME_MS *= SLEEP_MULTIPLIER_ON_ERROR;
+                } else if (
+                    error instanceof ApiResponseError &&
+                    (error.code == 500 ||
+                        error.code == 502 ||
+                        error.code == 503 ||
+                        error.code == 504)
+                ) {
+                    log(`${new Date().toISOString()}\tAPI Error: ${error}\t`);
+                    SLEEP_UNTIL_TIMESTAMP_IN_MS = Date.now() + 60 * 1000.0; // Wait one minute before retrying...
                 } else {
                     throw error;
                 }
