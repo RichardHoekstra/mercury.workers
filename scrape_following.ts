@@ -9,6 +9,10 @@ import {
 import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
+function log(message: string) {
+    console.log("FOLLOWING\t" + message);
+}
+
 function sleep(ms: number) {
     return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -136,7 +140,7 @@ const loop = async () => {
         },
         orderBy: [{ fullFollowingScrapedAt: "asc" }],
     });
-    console.log(
+    log(
         `${new Date().toISOString()}\t${
             staleUser?.username
         }\t${staleUser?.fullFollowingScrapedAt.toISOString()}`
@@ -151,7 +155,7 @@ const loop = async () => {
         SLEEP_UNTIL_TIMESTAMP_IN_MS =
             staleUser.fullFollowingScrapedAt.getTime() +
             REFRESH_THRESHOLD_IN_MS;
-        console.log(
+        log(
             `${new Date().toISOString()}\tSLEEP UNTIL ${new Date(
                 SLEEP_UNTIL_TIMESTAMP_IN_MS / 1000.0
             ).toISOString()}`
@@ -201,7 +205,7 @@ const loop = async () => {
         expansions: "pinned_tweet_id",
     });
     if (request.rateLimit.remaining < staleUser.lastFollowingCount / 1000) {
-        console.log(
+        log(
             `${new Date().toISOString()}\tCannot finish without exceeding ratelimit: ${
                 request.rateLimit.remaining
             } < ${staleUser.lastFollowingCount / 1000} ${JSON.stringify(
@@ -231,14 +235,14 @@ const loop = async () => {
         where: { id: staleUser.id },
         data: { fullFollowingScrapedAt: new Date() },
     });
-    console.log(
+    log(
         `${new Date().toISOString()}\tFollowing: ${
             dbFollowingIds.length
         } Added: ${added.size}\tRemoved: ${removed.size}`
     );
 };
 
-export const scraper = async () => {
+export const scraperFollowing = async () => {
     await sleep(1000);
     let EXECUTION_TIME_MS = 0;
     while (true) {
@@ -254,15 +258,13 @@ export const scraper = async () => {
                     error.rateLimitError &&
                     error.rateLimit
                 ) {
-                    console.log(
-                        `${new Date().toISOString()}\tRatelimited: ${error}\t`
-                    );
+                    log(`${new Date().toISOString()}\tRatelimited: ${error}\t`);
                     SLEEP_UNTIL_TIMESTAMP_IN_MS =
                         error.rateLimit.reset * 1000.0;
                     SLEEP_TIME_MS *= SLEEP_MULTIPLIER_ON_ERROR;
-                    console.log(
-                        "\tSLEEP UNTIL:",
-                        new Date(SLEEP_UNTIL_TIMESTAMP_IN_MS).toISOString()
+                    log(
+                        "\tSLEEP UNTIL: " +
+                            new Date(SLEEP_UNTIL_TIMESTAMP_IN_MS).toISOString()
                     );
                 } else {
                     throw error;
@@ -270,19 +272,17 @@ export const scraper = async () => {
             }
         }
         const sleepTime = Math.max(1000, SLEEP_TIME_MS - EXECUTION_TIME_MS);
-        console.log(
-            "\tEXEC_TIME:",
-            (EXECUTION_TIME_MS / 1000).toLocaleString(),
-            "s"
+        log(
+            "\tEXEC_TIME: " + (EXECUTION_TIME_MS / 1000).toLocaleString() + "s"
         );
-        console.log("\tSLEEP_TIME:", (sleepTime / 1000).toLocaleString(), "s");
+        log("\tSLEEP_TIME: " + (sleepTime / 1000).toLocaleString() + "s");
         await sleep(sleepTime);
     }
 };
 
-scraper()
+scraperFollowing()
     .then()
     .catch((e) => {
-        console.log(e);
+        log(e);
         throw e;
     });

@@ -10,6 +10,10 @@ import {
 import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
+function log(message: string) {
+    console.log("PROFILES\t" + message);
+}
+
 function sleep(ms: number) {
     return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -125,7 +129,7 @@ const loop = async () => {
         orderBy: [{ profileScrapedAt: "asc" }],
         take: 100,
     });
-    console.log(
+    log(
         `${new Date().toISOString()}\tUSERS(${staleUsers.length}): [${
             staleUsers[0].username
         }]...[${
@@ -142,7 +146,7 @@ const loop = async () => {
         SLEEP_UNTIL_TIMESTAMP_IN_MS =
             staleUsers[0].likesScrapedAt.getTime() + REFRESH_THRESHOLD_IN_MS;
         SLEEP_TIME_MS *= SLEEP_MULTIPLIER_ON_ERROR;
-        console.log(
+        log(
             `${new Date().toISOString()}\tSLEEP UNTIL ${new Date(
                 SLEEP_UNTIL_TIMESTAMP_IN_MS
             ).toISOString()}`
@@ -184,7 +188,7 @@ const loop = async () => {
             data: { accountExists: false },
         });
     }
-    console.log(`${new Date().toISOString()}\tRemoved: ${removedIds.length}`);
+    log(`${new Date().toISOString()}\tRemoved: ${removedIds.length}`);
 
     // Update profiles for these 100 marked users in the database
     for (const user of request.data) {
@@ -226,16 +230,16 @@ const loop = async () => {
             },
         });
     }
-    console.log(`${new Date().toISOString()}\tAdded: ${requestIds.length}`);
+    log(`${new Date().toISOString()}\tAdded: ${requestIds.length}`);
 };
 
-export const scraper = async () => {
+export const scraperProfiles = async () => {
     let EXECUTION_TIME_MS = 0;
     let REFRESH_VIEWS_AT = 0;
     const REFRESH_VIEWS_INTERVAL_IN_MS = 8 * 60 * 60 * 1000; // 8 hours
     while (true) {
         if (Date.now() > REFRESH_VIEWS_AT) {
-            console.log(`${new Date().toISOString()}\tREFRESHING VIEWS`);
+            log(`${new Date().toISOString()}\tREFRESHING VIEWS`);
 
             await prisma.$executeRaw`REFRESH MATERIALIZED VIEW public.popular_user WITH DATA;`;
             await prisma.$executeRaw`REFRESH MATERIALIZED VIEW public.trending_user_1d WITH DATA;`;
@@ -245,7 +249,7 @@ export const scraper = async () => {
             await prisma.$executeRaw`REFRESH MATERIALIZED VIEW public.trending_user_90d WITH DATA;`;
             await prisma.$executeRaw`REFRESH MATERIALIZED VIEW public.trending_user_180d WITH DATA;`;
             await prisma.$executeRaw`REFRESH MATERIALIZED VIEW public.trending_user_365d WITH DATA;`;
-            console.log(`${new Date().toISOString()}\tDONE REFRESHING VIEWS`);
+            log(`${new Date().toISOString()}\tDONE REFRESHING VIEWS`);
             REFRESH_VIEWS_AT = Date.now() + REFRESH_VIEWS_INTERVAL_IN_MS;
         }
 
@@ -261,9 +265,7 @@ export const scraper = async () => {
                     error.rateLimitError &&
                     error.rateLimit
                 ) {
-                    console.log(
-                        `${new Date().toISOString()}\tRatelimited: ${error}\t`
-                    );
+                    log(`${new Date().toISOString()}\tRatelimited: ${error}\t`);
                     SLEEP_UNTIL_TIMESTAMP_IN_MS =
                         error.rateLimit.reset * 1000.0;
                     SLEEP_TIME_MS *= SLEEP_MULTIPLIER_ON_ERROR;
@@ -273,19 +275,17 @@ export const scraper = async () => {
             }
         }
         const sleepTime = Math.max(1000, SLEEP_TIME_MS - EXECUTION_TIME_MS);
-        console.log(
-            "\tEXEC_TIME:",
-            (EXECUTION_TIME_MS / 1000).toLocaleString(),
-            "s"
+        log(
+            "\tEXEC_TIME: " + (EXECUTION_TIME_MS / 1000).toLocaleString() + "s"
         );
-        console.log("\tSLEEP_TIME:", (sleepTime / 1000).toLocaleString(), "s");
+        log("\tSLEEP_TIME: " + (sleepTime / 1000).toLocaleString() + "s");
         await sleep(sleepTime);
     }
 };
 
-scraper()
+scraperProfiles()
     .then()
     .catch((e) => {
-        console.log(e);
+        log(e);
         throw e;
     });

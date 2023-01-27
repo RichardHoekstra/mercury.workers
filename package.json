@@ -8,6 +8,7 @@
         "start:worker:following": "npx ts-node scrape_following.ts",
         "start:worker:likes": "npx ts-node scrape_likes.ts",
         "start:worker:profiles": "npx ts-node scrape_profiles.ts",
+        "start:workers": "npx ts-node scrapers.ts",
         "build": "npx prisma generate"
     },
     "keywords": [],

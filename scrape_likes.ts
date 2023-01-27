@@ -10,6 +10,10 @@ import {
 import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
+function log(message: string) {
+    console.log("LIKES\t" + message);
+}
+
 function sleep(ms: number) {
     return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -126,7 +130,7 @@ const loop = async () => {
         orderBy: [{ likesScrapedAt: "asc" }],
     });
 
-    console.log(
+    log(
         `${new Date().toISOString()}\t${
             staleUser?.username
         }\t${staleUser?.likesScrapedAt.toISOString()}`
@@ -141,7 +145,7 @@ const loop = async () => {
         SLEEP_UNTIL_TIMESTAMP_IN_MS =
             staleUser.likesScrapedAt.getTime() + REFRESH_THRESHOLD_IN_MS;
         SLEEP_TIME_MS *= SLEEP_MULTIPLIER_ON_ERROR;
-        console.log(
+        log(
             `${new Date().toISOString()}\tSLEEP UNTIL ${new Date(
                 SLEEP_UNTIL_TIMESTAMP_IN_MS / 1000.0
             ).toISOString()}`
@@ -200,14 +204,14 @@ const loop = async () => {
         where: { id: staleUser.id },
         data: { likesScrapedAt: new Date() },
     });
-    console.log(
+    log(
         `${new Date().toISOString()}\tLikes: ${dbLikesIds.length} Added: ${
             added.size
         }\t`
     );
 };
 
-export const scraper = async () => {
+export const scraperLikes = async () => {
     let EXECUTION_TIME_MS = 0;
     while (true) {
         if (Date.now() > SLEEP_UNTIL_TIMESTAMP_IN_MS) {
@@ -222,9 +226,7 @@ export const scraper = async () => {
                     error.rateLimitError &&
                     error.rateLimit
                 ) {
-                    console.log(
-                        `${new Date().toISOString()}\tRatelimited: ${error}\t`
-                    );
+                    log(`${new Date().toISOString()}\tRatelimited: ${error}\t`);
                     SLEEP_UNTIL_TIMESTAMP_IN_MS =
                         error.rateLimit.reset * 1000.0;
                     SLEEP_TIME_MS *= SLEEP_MULTIPLIER_ON_ERROR;
@@ -234,19 +236,17 @@ export const scraper = async () => {
             }
         }
         const sleepTime = Math.max(1000, SLEEP_TIME_MS - EXECUTION_TIME_MS);
-        console.log(
-            "\tEXEC_TIME:",
-            (EXECUTION_TIME_MS / 1000).toLocaleString(),
-            "s"
+        log(
+            "\tEXEC_TIME: " + (EXECUTION_TIME_MS / 1000).toLocaleString() + "s"
         );
-        console.log("\tSLEEP_TIME:", (sleepTime / 1000).toLocaleString(), "s");
+        log("\tSLEEP_TIME: " + (sleepTime / 1000).toLocaleString() + "s");
         await sleep(sleepTime);
     }
 };
 
-scraper()
+scraperLikes()
     .then()
     .catch((e) => {
-        console.log(e);
+        log(e);
         throw e;
     });
